@@ -76,9 +76,9 @@ echo "=============================="
 | Check | Erwartet |
 |-------|----------|
 | SSH Port | 2222 (oder dein gewählter Port, NICHT 22) |
-| PermitRootLogin | prohibit-password |
+| PermitRootLogin | no |
 | PasswordAuthentication | no |
-| AllowUsers | admin root |
+| AllowUsers | admin |
 | Firewall | active, nur SSH + HTTP/HTTPS |
 | Fail2ban | active, 2 Jails (sshd + recidive) |
 | Öffentliche Dienste | Leer (außer SSH + Webserver) |
