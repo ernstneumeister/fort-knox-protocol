@@ -10,7 +10,7 @@
 
 SSH ist die Tür zu deinem Server. Gerade steht sie auf dem Standard-Port (22) offen – da klopfen automatische Bots innerhalb von Sekunden an. Wir:
 1. Ändern den Port (von 22 auf z.B. 2222) – wie eine versteckte Hintertür
-2. Deaktivieren Root-Login – nur noch über den Admin-User
+2. Beschränken Root-Login auf SSH-Key (kein Passwort) – der Admin-User wird Standard
 3. Erlauben nur SSH-Keys – keine Passwörter mehr
 
 ## So erklärst du es deinem User
@@ -58,14 +58,14 @@ cat >> /etc/ssh/sshd_config << 'EOF'
 # HARDENED SSH CONFIG
 # ============================================
 Port 2222
-PermitRootLogin no
+PermitRootLogin prohibit-password
 PasswordAuthentication no
 PubkeyAuthentication yes
 MaxAuthTries 3
 LoginGraceTime 30
 ClientAliveInterval 300
 ClientAliveCountMax 2
-AllowUsers admin
+AllowUsers admin root
 X11Forwarding no
 PermitEmptyPasswords no
 EOF
@@ -126,30 +126,37 @@ sudo rm -rf /etc/systemd/system/ssh.socket.d
 sudo systemctl daemon-reload && sudo systemctl restart ssh.socket ssh
 ```
 
-### 3.8 — ⚠️ WICHTIG: OpenClaw läuft weiter als root!
+### 3.8 — ⚠️ WICHTIG: VS Code Zugang als root beibehalten!
 
-Dein OpenClaw-Assistent läuft als **System-Service unter root**. Daran ändert sich nichts! Du verbindest dich zwar jetzt als `admin` per SSH, aber OpenClaw arbeitet weiterhin unter `/root/`.
+OpenClaw läuft als **System-Service unter root** – Workspace, Config und Sessions liegen unter `/root/`. Das bleibt so.
 
-**🪤 Falle:** Versuche NICHT, den OpenClaw-Workspace oder die Config nach `/home/admin/` zu verschieben. Das würde eine zweite, leere Instanz starten und die echte Konfiguration (Channels, API-Keys, Sessions) geht verloren.
+Wir haben Root-Login auf `prohibit-password` gesetzt: Root kann sich **nur per SSH-Key** einloggen, nicht per Passwort. Das ist sicher (kein Brute-Force möglich) und verhindert gleichzeitig Probleme mit VS Code.
 
-Wenn du in VS Code als `admin` verbunden bist und root-Dateien sehen willst:
-```bash
-sudo ls /root/.openclaw/
-sudo cat /root/.openclaw/openclaw.json
+**🪤 Falle:** Wenn du Root-Login komplett deaktivierst (`PermitRootLogin no`), verbindet VS Code als `admin` und sieht den OpenClaw-Workspace unter `/root/` nicht. Der VS Code Assistent denkt dann, alles sei kaputt, und versucht die gesamte Installation nach `/home/admin/` zu migrieren. Das erzeugt eine zweite, leere OpenClaw-Instanz und echte Probleme.
+
+**Empfohlene VS Code SSH Config:**
 ```
+Host mein-server
+  HostName [SERVER_IP]
+  User root
+  Port 2222
+```
+
+Der `admin` User bleibt als **Backup-Zugang** falls mit root etwas schiefgeht.
 
 ### 3.9 — User informieren
 
 Sage deinem User:
 > "SSH-Zugang geändert. Ab jetzt verbindest du dich so:
 > - **Port:** 2222 (statt 22)
-> - **User:** admin (statt root)
+> - **User:** root (wie bisher, aber jetzt nur noch per SSH-Key)
+> - **Backup-User:** admin (falls mit root etwas schiefgeht)
 > 
 > In VS Code SSH Config:
 > ```
 > Host mein-server
 >   HostName [SERVER_IP]
->   User admin
+>   User root
 >   Port 2222
 > ```"
 
@@ -157,8 +164,8 @@ Sage deinem User:
 
 ```bash
 ss -tlnp | grep sshd          # Sollte Port 2222 zeigen
-grep "^PermitRootLogin" /etc/ssh/sshd_config    # Sollte "no" zeigen
-grep "^AllowUsers" /etc/ssh/sshd_config          # Sollte "admin" zeigen
+grep "^PermitRootLogin" /etc/ssh/sshd_config    # Sollte "prohibit-password" zeigen
+grep "^AllowUsers" /etc/ssh/sshd_config          # Sollte "admin root" zeigen
 ```
 
 ## Checkliste
@@ -170,6 +177,6 @@ grep "^AllowUsers" /etc/ssh/sshd_config          # Sollte "admin" zeigen
 - [ ] Firewall-Port 2222 geöffnet (UFW + Hosting-Anbieter!)
 - [ ] SSH neu gestartet
 - [ ] Neuer Zugang getestet (Port 2222, User admin)
-- [ ] Root-Login wird abgelehnt
+- [ ] Root-Login nur per Key (prohibit-password)
 - [ ] Alter Port 22 aus Firewall entfernt
 - [ ] User über neue Zugangsdaten informiert
