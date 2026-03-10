@@ -2,13 +2,11 @@
 
 Nachdem alle Schritte abgearbeitet sind, prüfe ob wirklich alles korrekt umgesetzt wurde.
 
-**Wichtig:** Prüfe die LAUFENDEN Werte, nicht nur Config-Dateien. Config-Dateien können falsch sein – was zählt ist, was tatsächlich aktiv ist.
+**Wichtig:** Prüfe die LAUFENDEN Werte, nicht nur Config-Dateien.
 
 ---
 
 ## Alle Checks auf einmal
-
-Kopiere diesen Block und führe ihn aus:
 
 ```bash
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
@@ -20,9 +18,7 @@ echo "=============================="
 echo ""
 echo "--- SSH ---"
 ss -tlnp | grep sshd
-grep "^PermitRootLogin" /etc/ssh/sshd_config
 grep "^PasswordAuthentication" /etc/ssh/sshd_config
-grep "^AllowUsers" /etc/ssh/sshd_config
 
 echo ""
 echo "--- Firewall ---"
@@ -53,6 +49,10 @@ swapon --show
 free -h | grep Swap
 
 echo ""
+echo "--- RAM-Limits ---"
+systemctl show openclaw-*.service 2>/dev/null | grep -E "MemoryMax=|MemoryHigh=" | head -2
+
+echo ""
 echo "--- Monitoring ---"
 /usr/local/bin/check-memory.sh
 cat /etc/cron.d/memory-monitor 2>/dev/null | head -2
@@ -75,28 +75,24 @@ echo "=============================="
 
 | Check | Erwartet |
 |-------|----------|
-| SSH Port | 2222 (oder dein gewählter Port, NICHT 22) |
-| PermitRootLogin | no |
+| SSH Port | 2222 (NICHT 22) |
 | PasswordAuthentication | no |
-| AllowUsers | admin |
 | Firewall | active, nur SSH + HTTP/HTTPS |
 | Fail2ban | active, 2 Jails (sshd + recidive) |
 | Öffentliche Dienste | Leer (außer SSH + Webserver) |
 | Kernel-Werte | Alle wie angegeben |
 | Swap | 4GB+ vorhanden |
+| RAM-Limits | MemoryMax + MemoryHigh gesetzt |
 | Memory-Check | OK |
 | Auto-Updates | active |
 | Festplatte | unter 80% |
 
 ## Was tun bei Abweichungen?
 
-- Gehe zurück zum entsprechenden Schritt und arbeite ihn erneut durch
-- Bei kritischen Abweichungen (SSH, Firewall): Sofort beheben
-- Bei kleinen Abweichungen (Log-Größe, Swap): Beim nächsten Wartungsfenster
+- Gehe zurück zum entsprechenden Schritt
+- Kritisch (SSH, Firewall): Sofort beheben
+- Kleineres (Log-Größe, Swap): Beim nächsten Wartungsfenster
 
 ## Regelmäßig wiederholen
 
-Empfehlung: Diesen Audit **einmal im Monat** laufen lassen, oder nach:
-- Installation neuer Software
-- System-Updates
-- Sicherheitsvorfällen
+Empfehlung: Diesen Audit **einmal im Monat** laufen lassen.

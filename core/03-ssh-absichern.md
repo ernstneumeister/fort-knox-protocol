@@ -1,22 +1,28 @@
 # Schritt 3: SSH absichern
 
-⚠️ **Mittleres Risiko** – hier ändert sich dein Server-Zugang. Fehler können aussperren.
-
-**Goldene Regel:** Alte SSH-Verbindung IMMER offen lassen. Neue Einstellungen in einem NEUEN Fenster testen. Erst wenn das neue Fenster funktioniert, ist es sicher.
+🔍 **Prüfen** – erst checken ob bereits abgesichert, nur bei Bedarf durchführen.
 
 ---
 
-## Was passiert hier?
+## Kurz-Info für den User
 
-SSH ist die Tür zu deinem Server. Gerade steht sie auf dem Standard-Port (22) offen – da klopfen automatische Bots innerhalb von Sekunden an. Wir:
-1. Ändern den Port (von 22 auf z.B. 2222) – wie eine versteckte Hintertür
-2. Erlauben nur SSH-Keys – keine Passwörter mehr
+> "SSH ist die Tür zu deinem Server. Ich prüfe ob sie schon abgesichert ist – falls nicht, ändere ich den Port und erlaube nur noch deinen Schlüssel."
 
-## So erklärst du es deinem User
+## ZUERST PRÜFEN
 
-> "SSH ist wie die Haustür deines Servers. Gerade hat sie die Standard-Adresse und jeder Einbrecher-Bot weiß wo sie ist. Ich ändere die Adresse und erlaube nur noch deinen Schlüssel (SSH-Key). Danach: gleicher Zugang für dich, aber unsichtbar für Angreifer."
+```bash
+ss -tlnp | grep sshd
+grep "^PasswordAuthentication" /etc/ssh/sshd_config
+```
 
-> ⚠️ "Wichtig: Nach diesem Schritt musst du deine SSH-Verbindung anpassen – neuer Port. Ich zeige dir genau was du ändern musst."
+**Wenn SSH bereits auf Port 2222 läuft UND PasswordAuthentication=no → Schritt überspringen!**
+Sage dem User: "SSH ist schon abgesichert ✅ – weiter zum nächsten Schritt."
+
+Falls nicht → weiter mit der Anleitung:
+
+---
+
+**Goldene Regel:** Alte SSH-Verbindung IMMER offen lassen. Neue Einstellungen in einem NEUEN Fenster testen.
 
 ## Anleitung
 
@@ -26,15 +32,13 @@ SSH ist die Tür zu deinem Server. Gerade steht sie auf dem Standard-Port (22) o
 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
 ```
 
-Das ist deine Rettungsleine falls etwas schiefgeht.
-
 ### 3.2 — Auf Ubuntu 24.04: Socket-Aktivierung prüfen
 
 ```bash
 systemctl is-active ssh.socket
 ```
 
-**🪤 Falle:** Wenn hier "active" steht (Ubuntu 24.04+), wird der Port NICHT über die SSH-Config geändert sondern über systemd:
+**🪤 Falle:** Wenn "active" (Ubuntu 24.04+), wird der Port über systemd geändert:
 
 ```bash
 mkdir -p /etc/systemd/system/ssh.socket.d
@@ -45,8 +49,6 @@ ListenStream=0.0.0.0:2222
 ListenStream=[::]:2222
 EOF
 ```
-
-Das leere `ListenStream=` löscht den alten Standard. Ohne das bleibt Port 22 zusätzlich offen.
 
 ### 3.3 — SSH-Config anpassen
 
@@ -68,29 +70,27 @@ PermitEmptyPasswords no
 EOF
 ```
 
-Alte Werte auskommentieren (falls vorhanden):
+Alte Werte auskommentieren:
 ```bash
 sed -i 's/^PasswordAuthentication yes/# PasswordAuthentication yes  # DEAKTIVIERT/' /etc/ssh/sshd_config
 ```
 
-### 3.4 — Config testen BEVOR neu gestartet wird
+### 3.4 — Config testen
 
 ```bash
 sshd -t
 ```
 
-Wenn hier **irgendein Fehler** kommt: **NICHT weitermachen.** Erst den Fehler beheben.
+Fehler? → NICHT weitermachen. Erst beheben.
 
-### 3.5 — Firewall ZUERST aktualisieren
-
-**🪤 Falle:** Wenn die Firewall nur Port 22 erlaubt und du SSH auf 2222 änderst → ausgesperrt!
+### 3.5 — Firewall aktualisieren
 
 ```bash
 ufw allow 2222/tcp comment "SSH neuer Port"
-# Den alten Port 22 noch NICHT löschen – erst wenn 2222 funktioniert
+# Alten Port 22 noch NICHT löschen!
 ```
 
-**Hetzner Cloud Firewall:** Falls du eine Hetzner Firewall hast, muss Port 2222 auch DORT freigeschaltet werden (im Hetzner Cloud Dashboard oder per API). Die Server-Firewall (UFW) und die Hetzner-Firewall sind zwei verschiedene Ebenen.
+**Hetzner Cloud Firewall:** Port 2222 muss auch dort freigeschaltet werden!
 
 ### 3.6 — SSH neu starten
 
@@ -110,31 +110,27 @@ systemctl restart ssh
 ssh root@[SERVER_IP] -p 2222
 ```
 
-**Funktioniert?** → Dann alten Port 22 aus der Firewall entfernen:
+**Funktioniert?** → Alten Port entfernen:
 ```bash
 ufw delete allow 22/tcp
 ```
 
-**Funktioniert NICHT?** → Im alten (noch offenen!) Fenster:
+**Funktioniert NICHT?** → Im alten Fenster zurückrollen:
 ```bash
 cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config
 rm -rf /etc/systemd/system/ssh.socket.d
 systemctl daemon-reload && systemctl restart ssh.socket ssh
 ```
 
-### 3.8 — User informieren
+### 3.8 — VS Code Config aktualisieren
 
-Sage deinem User:
-> "SSH-Zugang geändert. Ab jetzt verbindest du dich so:
-> - **Port:** 2222 (statt 22)
-> 
-> In VS Code SSH Config:
-> ```
-> Host mein-server
->   HostName [SERVER_IP]
->   User root
->   Port 2222
-> ```"
+Sage dem User:
+> "Ich habe den SSH-Zugang geändert. Damit VS Code weiterhin verbinden kann, gib bitte diesen Prompt in VS Code ein:"
+
+Dann gib dem User folgenden Prompt zum Kopieren:
+```
+Mein Server SSH-Port wurde von 22 auf 2222 geändert. Bitte aktualisiere meine SSH-Config (~/.ssh/config) für den Host openclaw-server: Ändere den Port auf 2222. Falls der Eintrag noch nicht existiert, erstelle ihn mit HostName [SERVER_IP], User root, Port 2222.
+```
 
 ## Prüfen
 
@@ -145,12 +141,11 @@ grep "^PasswordAuthentication" /etc/ssh/sshd_config    # Sollte "no" zeigen
 
 ## Checkliste
 
+- [ ] SSH bereits abgesichert? → Überspringen
 - [ ] Backup der SSH-Config erstellt
-- [ ] Socket-Aktivierung geprüft (und Override erstellt falls nötig)
-- [ ] Neue Config geschrieben
-- [ ] `sshd -t` ohne Fehler
-- [ ] Firewall-Port 2222 geöffnet (UFW + Hosting-Anbieter!)
-- [ ] SSH neu gestartet
-- [ ] Neuer Zugang getestet (Port 2222)
-- [ ] Alter Port 22 aus Firewall entfernt
-- [ ] User über neue Zugangsdaten informiert
+- [ ] Socket-Aktivierung geprüft
+- [ ] Neue Config geschrieben + getestet
+- [ ] Firewall-Port 2222 geöffnet
+- [ ] SSH neu gestartet + getestet
+- [ ] Alter Port 22 entfernt
+- [ ] User hat VS Code Prompt bekommen

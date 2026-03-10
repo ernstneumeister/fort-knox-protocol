@@ -1,16 +1,12 @@
 # Schritt 8: Kernel absichern
 
-🟢 **Geringes Risiko** – keine Auswirkung auf normalen Betrieb.
+🟢 **Automatisch** – keine Auswirkung auf normalen Betrieb.
 
 ---
 
-## Was passiert hier?
+## Kurz-Info für den User
 
-Der Kernel ist das Betriebssystem unter der Haube. Wir ändern Einstellungen die Angriffe erschweren: keine Weiterleitungen, keine Info-Leaks, kein unnötiges IPv6, und weniger Speicherverbrauch durch optimiertes Swapping.
-
-## So erklärst du es deinem User
-
-> "Ich stelle jetzt das Betriebssystem so ein, dass es weniger Informationen nach außen gibt und bestimmte Angriffsarten blockiert. Das ist wie Vorhänge zuziehen und die Hintertür abschließen – von innen merkst du keinen Unterschied."
+> "Betriebssystem-Einstellungen härten: weniger Informationen nach außen, bekannte Angriffe blockieren."
 
 ## Anleitung
 
@@ -52,18 +48,16 @@ net.ipv6.conf.lo.disable_ipv6 = 1
 EOF
 ```
 
-⚠️ **Docker-User:** Wenn Docker auf dem Server läuft, `net.ipv4.ip_forward` NICHT auf 0 setzen – Docker braucht das!
+⚠️ **Docker-User:** Wenn Docker auf dem Server läuft, `net.ipv4.ip_forward` NICHT auf 0 setzen!
 
 ### 8.2 — Einstellungen aktivieren
 
 ```bash
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
-sudo sysctl --system
+sysctl --system
 ```
 
 ### 8.3 — Boot-Service erstellen
-
-Manche Einstellungen werden beim Neustart zurückgesetzt. Dieser Service wendet sie nach jedem Boot erneut an:
 
 ```bash
 cat > /etc/systemd/system/sysctl-hardening.service << 'EOF'
@@ -80,46 +74,40 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl daemon-reload
-sudo systemctl enable sysctl-hardening.service
+systemctl daemon-reload
+systemctl enable sysctl-hardening.service
 ```
 
-### 8.4 — Prozesse zwischen Usern verstecken
-
-Verhindert, dass ein User die Prozesse anderer User sehen kann:
+### 8.4 — Prozesse verstecken
 
 ```bash
-sudo mount -o remount,hidepid=2 /proc
-echo "proc /proc proc defaults,hidepid=2 0 0" | sudo tee -a /etc/fstab
+mount -o remount,hidepid=2 /proc
+echo "proc /proc proc defaults,hidepid=2 0 0" | tee -a /etc/fstab
 ```
 
 ### 8.5 — IPv6 in der Firewall deaktivieren
 
 ```bash
-sudo sed -i 's/^IPV6=yes/IPV6=no/' /etc/default/ufw
-sudo ufw reload
+sed -i 's/^IPV6=yes/IPV6=no/' /etc/default/ufw
+ufw reload
 ```
 
 ## Prüfen
 
-**Wichtig: LAUFENDE Werte prüfen, nicht nur die Config-Datei!**
-
 ```bash
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
-sysctl net.ipv4.conf.all.accept_redirects     # Sollte 0 sein
-sysctl net.ipv4.tcp_syncookies                # Sollte 1 sein
-sysctl kernel.randomize_va_space              # Sollte 2 sein
-sysctl kernel.dmesg_restrict                  # Sollte 1 sein
-sysctl vm.swappiness                          # Sollte 10 sein
-sysctl net.ipv6.conf.all.disable_ipv6         # Sollte 1 sein
-mount | grep hidepid                          # Sollte hidepid zeigen
+sysctl net.ipv4.conf.all.accept_redirects     # 0
+sysctl net.ipv4.tcp_syncookies                # 1
+sysctl kernel.randomize_va_space              # 2
+sysctl kernel.dmesg_restrict                  # 1
+sysctl vm.swappiness                          # 10
+sysctl net.ipv6.conf.all.disable_ipv6         # 1
+mount | grep hidepid
 ```
 
 ## Checkliste
 
-- [ ] Sysctl-Config erstellt
-- [ ] Einstellungen aktiviert
+- [ ] Sysctl-Config erstellt + aktiviert
 - [ ] Boot-Service eingerichtet
 - [ ] /proc versteckt (hidepid)
 - [ ] IPv6 deaktiviert (sysctl + UFW)
-- [ ] Alle Laufzeit-Werte geprüft

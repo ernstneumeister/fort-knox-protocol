@@ -12,44 +12,44 @@ Du bist **kein Entwickler** – und musst auch keiner sein. Dein KI-Assistent ar
 
 **So geht's:**
 1. Gib deinem Assistenten den Link zu diesem Repository
-2. Sag: *"Arbeite das Fort Knox Protocol durch. Erkläre mir jeden Schritt bevor du ihn ausführst und warte auf mein OK."*
-3. Dein Assistent erklärt dir jeden Schritt in einfacher Sprache und führt ihn nach deinem OK aus
-4. Nach ca. 30-45 Minuten ist dein Server abgesichert
+2. Er arbeitet die Schritte automatisch durch
+3. Nur bei kritischen Änderungen fragt er nach
+4. Nach ca. 15-20 Minuten ist dein Server abgesichert
 
 ---
 
 ## Was wird gemacht?
 
-| Schritt | Was passiert | Risiko |
-|---------|-------------|--------|
-| 0 | Backup erstellen | 🟢 Kein Risiko |
-| 1 | System-Updates | 🟢 Kein Risiko |
-| 3 | SSH absichern (Port + Key-Only) | 🟡 Mittel – SSH-Zugang ändert sich |
-| 4 | Firewall einrichten | 🟡 Mittel |
-| 5 | Brute-Force-Schutz | 🟢 Kein Risiko |
-| 6 | VPN-Lockdown (optional) | 🔴 Hoch – nur für Fortgeschrittene |
-| 7 | Dienste aufräumen | 🟢 Gering |
-| 8 | Kernel absichern | 🟢 Gering |
-| 9 | Notfall-Speicher | 🟢 Kein Risiko |
-| 10 | RAM-Limits setzen | 🟡 Mittel – Neustart nötig |
-| 11 | Monitoring | 🟢 Kein Risiko |
+| Schritt | Was passiert | Modus |
+|---------|-------------|-------|
+| 0 | Backup erstellen | 🟢 Automatisch |
+| 1 | System-Updates | 🟢 Automatisch |
+| 3 | SSH absichern (Port + Key-Only) | 🔍 Prüfen, nur bei Bedarf |
+| 4 | Firewall einrichten | 🟢 Automatisch |
+| 5 | Brute-Force-Schutz | 🟢 Automatisch |
+| 6 | VPN-Lockdown (optional) | ⏭️ Überspringen (nur für Fortgeschrittene) |
+| 7 | Dienste aufräumen | 🟢 Automatisch |
+| 8 | Kernel absichern | 🟢 Automatisch |
+| 9 | Notfall-Speicher | 🟢 Automatisch |
+| 10 | RAM-Limits setzen | ⚠️ Fragen (Chat wird kurz unterbrochen) |
+| 11 | Monitoring | 🟢 Automatisch |
 
 **Danach:** Abschlusstest (Audit) bestätigt, dass alles korrekt umgesetzt wurde.
 
 ---
 
-## Wichtige Regeln
+## Wichtige Regeln für den Assistenten
 
-**Für den Assistenten:**
-- ⚠️ Jeden Schritt **erklären bevor ausführen** – in einfacher Sprache
-- ⚠️ Bei SSH-Änderungen (Schritt 3): **Alte Verbindung offen lassen**, neue testen
-- ⚠️ Bei Schritt 10: **User warnen** dass der Assistent kurz offline geht
-- ⚠️ Immer erst **Backup/Snapshot** erstellen (Schritt 0)
+### Ablauf
+- 🟢 **Automatisch:** Einfach machen, kurz berichten was gemacht wurde. NICHT fragen ob du es machen sollst.
+- 🔍 **Prüfen:** Erst checken ob bereits erledigt. Nur wenn nötig durchführen.
+- ⚠️ **Fragen:** Vorher den User informieren und auf Bestätigung warten.
 
-**Für dich:**
-- Du brauchst SSH-Zugang zu deinem Server (z.B. über VS Code)
-- Erstelle vorher einen Snapshot bei deinem Hosting-Anbieter
-- Plane ca. 30-45 Minuten ein
+### Allgemein
+- Erkläre kurz in 1-2 Sätzen was jeder Schritt bewirkt – einfache Sprache, keine Fachvorträge
+- Bei SSH-Änderungen (Schritt 3): **Alte Verbindung offen lassen**, neue testen
+- Bei Schritt 10: **Vorher fragen!** Der Chat wird unterbrochen
+- Am Ende den Audit (audit/AUDIT.md) durchlaufen lassen
 
 ---
 
@@ -72,9 +72,6 @@ core/
 audit/
   AUDIT.md                 ← Abschlusstest
 ```
-
----
-
 
 ---
 

@@ -1,16 +1,12 @@
 # Schritt 11: Monitoring
 
-🟢 **Kein Risiko**
+🟢 **Automatisch** – kein Risiko.
 
 ---
 
-## Was passiert hier?
+## Kurz-Info für den User
 
-Absicherung ist kein einmaliger Vorgang – der Server muss dauerhaft überwacht werden. Wir richten einen automatischen Check ein, der alle 15 Minuten den Speicherverbrauch prüft und bei Problemen eine Warnung ins System-Log schreibt. Außerdem begrenzen wir die Log-Dateien, damit sie nicht die Festplatte vollschreiben.
-
-## So erklärst du es deinem User
-
-> "Ich richte jetzt eine automatische Überwachung ein. Alle 15 Minuten prüft der Server seinen Speicher. Außerdem begrenze ich die Log-Dateien – die können sonst mehrere Gigabyte groß werden."
+> "Automatische Überwachung einrichten: Speicher-Check alle 15 Minuten + Log-Dateien begrenzen."
 
 ## Anleitung
 
@@ -60,19 +56,17 @@ cat > /etc/cron.d/memory-monitor << 'EOF'
 EOF
 ```
 
-Warnungen landen in `/var/log/syslog`.
-
 ### 11.3 — Log-Größe begrenzen
 
 ```bash
-sudo mkdir -p /etc/systemd/journald.conf.d
+mkdir -p /etc/systemd/journald.conf.d
 cat > /etc/systemd/journald.conf.d/size-limit.conf << 'EOF'
 [Journal]
 SystemMaxUse=500M
 RuntimeMaxUse=100M
 EOF
 
-sudo systemctl restart systemd-journald
+systemctl restart systemd-journald
 ```
 
 ### 11.4 — Festplatte prüfen
@@ -81,15 +75,13 @@ sudo systemctl restart systemd-journald
 df -h /
 ```
 
-Wenn über 80% belegt → aufräumen (siehe Schritt 0).
-
 ## Prüfen
 
 ```bash
-/usr/local/bin/check-memory.sh      # Sollte "OK" zeigen
-cat /etc/cron.d/memory-monitor      # Sollte den Cron-Job zeigen
-journalctl --disk-usage             # Sollte unter 500MB sein
-df -h / | awk 'NR==2{print $5}'    # Sollte unter 80% sein
+/usr/local/bin/check-memory.sh
+cat /etc/cron.d/memory-monitor
+journalctl --disk-usage
+df -h / | awk 'NR==2{print $5}'
 ```
 
 ## Checkliste

@@ -1,28 +1,26 @@
 # Schritt 10: RAM-Limits setzen
 
-🟡 **Mittleres Risiko** – der Assistent muss neu gestartet werden.
+⚠️ **Fragen!** – Der Chat wird kurz unterbrochen.
 
 ---
 
-## Was passiert hier?
+## WICHTIG: Vor diesem Schritt den User fragen!
 
-Ohne RAM-Limit könnte dein KI-Assistent bei einem Speicherleck den ganzen Server lahmlegen. Wir setzen ein Maximum: z.B. "Du darfst maximal 6 GB von 8 GB nutzen." Der Rest bleibt für das System.
+Sage dem User:
+> "Ich setze jetzt eine Obergrenze für meinen Speicherverbrauch, damit ich nicht den ganzen Server lahmlegen kann. Dafür muss ich mich kurz neu starten."
+>
+> "**Der Chat wird dabei unterbrochen.** Wenn ich mich nicht automatisch zurückmelde, tippe einfach WEITER ein – dann fahre ich fort."
+>
+> "Soll ich loslegen?"
 
-## So erklärst du es deinem User
-
-> "Ich setze jetzt eine Obergrenze für meinen Speicherverbrauch. Damit kann ich nicht versehentlich den ganzen Server lahmlegen. Dafür muss ich mich kurz neu starten – bin in 30-60 Sekunden zurück."
-
-> ⚠️ "Falls ich nicht zurückkomme, kannst du mich über VS Code/SSH mit diesem Befehl starten: `sudo systemctl restart openclaw-[NAME].service`"
+**Warte auf Bestätigung!**
 
 ## Anleitung
 
 ### 10.1 — Service-Datei finden
 
 ```bash
-# OpenClaw System-Service:
-sudo systemctl cat openclaw-*
-
-# Oder manuell suchen:
+systemctl cat openclaw-*
 ls /etc/systemd/system/openclaw-*
 ```
 
@@ -33,9 +31,9 @@ In der `[Service]` Sektion der Service-Datei hinzufügen:
 ```ini
 # RAM: Hartes Limit bei ~80% des Gesamt-RAM
 MemoryMax=6G
-# RAM: Weiches Limit (Warnung bevor hartes Limit greift)
+# RAM: Weiches Limit
 MemoryHigh=5G
-# Keine Rechte-Eskalation erlauben
+# Keine Rechte-Eskalation
 NoNewPrivileges=yes
 ```
 
@@ -47,27 +45,27 @@ NoNewPrivileges=yes
 ### 10.3 — Neustart
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl restart openclaw-[NAME].service
+systemctl daemon-reload
+systemctl restart openclaw-[NAME].service
 ```
 
-⚠️ **Der Assistent ist jetzt kurz offline.** Warte 30-60 Sekunden.
+⚠️ **Der Chat wird jetzt unterbrochen.** Warte 30-60 Sekunden.
 
-### 10.4 — Prüfen ob er wieder läuft
+### 10.4 — Nach dem Neustart prüfen
+
+Wenn der User "WEITER" schreibt oder die Verbindung wiederhergestellt ist:
 
 ```bash
-sudo systemctl is-active openclaw-[NAME].service
-# Sollte "active" zeigen
-
-sudo systemctl show openclaw-[NAME].service | grep -E "MemoryMax=|MemoryHigh="
-# Sollte die gesetzten Werte zeigen (in Bytes)
+systemctl is-active openclaw-[NAME].service
+systemctl show openclaw-[NAME].service | grep -E "MemoryMax=|MemoryHigh="
 ```
+
+Berichte dem User: "Bin wieder da! RAM-Limits sind gesetzt ✅"
 
 ## Checkliste
 
-- [ ] User über Neustart informiert
+- [ ] User informiert und bestätigt
 - [ ] MemoryMax und MemoryHigh gesetzt
 - [ ] NoNewPrivileges=yes
 - [ ] Service neu gestartet
 - [ ] Service läuft wieder
-- [ ] RAM-Limits bestätigt
